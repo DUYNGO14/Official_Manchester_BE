@@ -53,11 +53,14 @@ export class User {
   @Prop()
   password: string;
 
-  @Prop({unique: true})
+  @Prop()
   code?: string;
 
   @Prop()
   expired_code?: Date;
+
+  @Prop({default: '00'})
+  number: string;
 
   // Thêm trường tham chiếu đến các session
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Session' }] })

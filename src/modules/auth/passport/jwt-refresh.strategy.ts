@@ -5,15 +5,20 @@ import { ConfigService } from '@nestjs/config';
 import { cookieExtractor } from '@/common/helper/cookie-extractor';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor(configService: ConfigService) {
     const secret = configService.get<string>('JWT_SECRET_REFRESH_TOKEN');
     if (!secret) {
-      throw new Error('❌ Missing JWT_SECRET_REFRESH_TOKEN in environment variables');
+      throw new Error(
+        '❌ Missing JWT_SECRET_REFRESH_TOKEN in environment variables',
+      );
     }
-
+    const cookieExt = cookieExtractor;
     super({
-      jwtFromRequest: cookieExtractor, // ✅ Lấy từ cookie
+      jwtFromRequest: cookieExt, // ✅ Lấy từ cookie
       secretOrKey: secret,
       passReqToCallback: true,
     });

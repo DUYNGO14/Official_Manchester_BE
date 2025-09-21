@@ -10,6 +10,7 @@ import {
   IsString,
   Matches,
   IsEnum,
+  IsNumberString,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -33,9 +34,13 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
   @IsString({ message: 'Mật khẩu phải là chuỗi ký tự' })
   @Length(6, 30, { message: 'Mật khẩu phải từ 6 đến 30 ký tự' })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, {
-    message: 'Mật khẩu phải chứa ít nhất một chữ hoa, một chữ thường và một số',
-  })
+  @Matches(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+    {
+      message:
+        'Mật khẩu phải chứa ít nhất một chữ hoa, một chữ thường và một số',
+    },
+  )
   password: string;
 
   @IsOptional()
@@ -79,4 +84,11 @@ export class CreateUserDto {
     message: 'Giới tính phải là MALE, FEMALE hoặc OTHER',
   })
   gender: string;
+
+  @IsOptional()
+  @IsNumberString({}, { message: 'Must be a number string' })
+  @Matches(/^(?:[0-9]|[1-9][0-9])$/, {
+    message: 'Must be between 0 and 99',
+  })
+  number: string;
 }

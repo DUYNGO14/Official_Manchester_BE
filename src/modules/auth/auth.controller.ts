@@ -3,6 +3,7 @@ import { LocalAuthGuard } from '@/modules/auth/passport/local-auth.guard';
 import {
   Body,
   Controller,
+  Get,
   Headers,
   Post,
   Request,
@@ -43,24 +44,26 @@ export class AuthController {
     return await this.authService.verifyAccount(email, code);
   }
 
-  @Public()
-  @UseGuards(JwtRefreshGuard)
+  // @Public()
+  // @UseGuards(JwtRefreshGuard)
   @Post('logout')
   async logout(@Request() req, @Res({ passthrough: true }) response: Response) {
     const result = await this.authService.logout(req.user);
-    response.clearCookie('refreshToken');
     return result;
   }
   
   @Public()
-  @UseGuards(JwtRefreshGuard)
   @Post('/refresh-token')
   async refreshToken(
     @Request() req,
-    @Res({ passthrough: true }) response: Response,
   ) {
-    const user = req.user;
-    const refreshTokenOld = req.cookies.refreshToken;
-    return await this.authService.refreshToken(user, refreshTokenOld, response);
+    const refreshTokenOld = req.cookies['refresh_cookei'] || '';
+    return await this.authService.refreshToken(refreshTokenOld);
+  }
+
+  @Get('profile')
+  async getProfile(@Request() req) {
+    const result =  await this.authService.getProfile(req.user.userId);
+    return result;
   }
 }

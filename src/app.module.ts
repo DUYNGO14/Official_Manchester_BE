@@ -15,7 +15,7 @@ import { TagsModule } from './modules/tags/tags.module';
 import { UsersModule } from './modules/users/users.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { CloudinaryModule } from '@/modules/cloudinary/cloudinary.module';
-import { BullBoardService } from './bull-board/bull-board.service';
+import { BullBoardService } from './modules/bull-board/bull-board.service';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
 import { ArticlesModule } from '@/modules/articles/articles.module';

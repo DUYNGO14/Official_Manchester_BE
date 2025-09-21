@@ -99,10 +99,15 @@ export class UsersService {
 
   async findOne(id: string): Promise<BaseResponse<Omit<User, 'password'>>> {
     try {
-      if (!mongoose.Types.ObjectId.isValid(id)) {
+      const objectId = id?.toString().trim();
+
+      if (!mongoose.Types.ObjectId.isValid(objectId)) {
         return ApiResponseError('Invalid id', 400);
       }
-      const user = await this.userModel.findById(id, { password: 0 }).lean();
+
+      const user = await this.userModel
+        .findById(objectId, { password: 0, __v: 0 })
+        .lean();
 
       if (!user) {
         return ApiResponseError('User not found', 404);
@@ -110,6 +115,7 @@ export class UsersService {
 
       return ApiResponseSuccess('User fetched successfully', user, 200);
     } catch (error) {
+      // có thể log error ra logger thay vì throw thẳng
       throw error;
     }
   }
@@ -150,7 +156,10 @@ export class UsersService {
           };
 
           // Xóa avatar cũ trên Cloudinary nếu tồn tại
-          const existingUser = await this.userModel.findById(id).select('avatar').lean();
+          const existingUser = await this.userModel
+            .findById(id)
+            .select('avatar')
+            .lean();
           if (existingUser?.avatar?.publicId) {
             try {
               await this.uploadService.deleteFile(existingUser.avatar.publicId);
@@ -159,23 +168,21 @@ export class UsersService {
               // Không throw error vì đây chỉ là cleanup
             }
           }
-
         } catch (uploadError) {
-          return ApiResponseError(`Avatar upload failed: ${uploadError.message}`, 400);
+          return ApiResponseError(
+            `Avatar upload failed: ${uploadError.message}`,
+            400,
+          );
         }
       }
 
       // Cập nhật user trong database
       const user = await this.userModel
-        .findByIdAndUpdate(
-          id,
-          updateData,
-          {
-            new: true,
-            runValidators: true,
-            projection: { password: 0, __v: 0 },
-          }
-        )
+        .findByIdAndUpdate(id, updateData, {
+          new: true,
+          runValidators: true,
+          projection: { password: 0, __v: 0 },
+        })
         .lean()
         .exec();
 
@@ -185,36 +192,43 @@ export class UsersService {
           try {
             await this.uploadService.deleteFile(newAvatarPublicId);
           } catch (deleteError) {
-            console.warn('Failed to delete newly uploaded avatar:', deleteError.message);
+            console.warn(
+              'Failed to delete newly uploaded avatar:',
+              deleteError.message,
+            );
           }
         }
         return ApiResponseError('User not found', 404);
       }
 
       return ApiResponseSuccess('User updated successfully', user, 200);
-
     } catch (error) {
       // ✅ ROLLBACK: Nếu có lỗi và đã upload avatar mới, xóa avatar vừa upload
       if (newAvatarPublicId) {
         try {
           await this.uploadService.deleteFile(newAvatarPublicId);
         } catch (deleteError) {
-          console.warn('Failed to rollback avatar upload:', deleteError.message);
+          console.warn(
+            'Failed to rollback avatar upload:',
+            deleteError.message,
+          );
         }
       }
 
       console.error('Update user error:', error);
-      
+
       // Xử lý các loại lỗi cụ thể
       if (error.code === 11000) {
         return ApiResponseError('Email already exists', 400);
       }
-      
+
       if (error.name === 'ValidationError') {
-        const errors = Object.values(error.errors).map((err: any) => err.message);
+        const errors = Object.values(error.errors).map(
+          (err: any) => err.message,
+        );
         return ApiResponseError(`Validation failed: ${errors.join(', ')}`, 400);
       }
-      
+
       if (error.name === 'CastError') {
         return ApiResponseError('Invalid data format', 400);
       }
@@ -275,25 +289,32 @@ export class UsersService {
   }
 
   async verifyAccount(
-    email: string,
-    code: string,
-  ): Promise<BaseResponse<Omit<User, 'password'>>> {
-    try {
-      const user = await this.userModel.findOne({ email });
-      if (!user) {
-        return ApiResponseError('User not found', 404);
-      }
-      if (user.code !== code) {
-        return ApiResponseError('Invalid code or email', 400);
-      }
-      if (dayjs(user.expired_code).isBefore(dayjs())) {
-        return ApiResponseError('Code expired or invalid', 400);
-      }
-      user.isActive = true;
-      await user.save();
+  email: string,
+  code: string,
+): Promise<BaseResponse<Omit<User, 'password'>>> {
+  try {
+    const user = await this.userModel.findOne({ email });
+    console.log(user?.code);
+    if (!user) {
+      return ApiResponseError('User not found', 404);
+    } else if (user.code !== code) {
+      return ApiResponseError('Invalid code or email', 400);
+    } else if (dayjs(user.expired_code).isBefore(dayjs())) {
+      return ApiResponseError('Code expired or invalid', 400);
+    } else {
+      // Sử dụng updateOne với $unset
+      await this.userModel.updateOne(
+        { email },
+        { 
+          $set: { isActive: true },
+          $unset: { code: "", expired_code: "" }
+        }
+      );
+      
       return ApiResponseSuccess('User verified successfully', user, 200);
-    } catch (error) {
-      throw error;
     }
+  } catch (error) {
+    throw error;
   }
+}
 }

@@ -1,4 +1,4 @@
-import { BullBoardService } from '@/bull-board/bull-board.service';
+import { BullBoardService } from '@/modules/bull-board/bull-board.service';
 import { AllExceptionsFilter } from '@/common/filters/all-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -23,17 +23,19 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1', { exclude: [''] });
   //  app.useGlobalFilters(new AllExceptionsFilter());
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: '*',
   });
-  app.useGlobalPipes(new ValidationPipe(
-    {
+  app.useGlobalPipes(
+    new ValidationPipe({
       transform: true,
       transformOptions: {
-        enableImplicitConversion: true
-      }
-    }
-  ));
+        enableImplicitConversion: true,
+      },
+    }),
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
   await app.listen(port);
   console.log(`Application is running on: ${await app.getUrl()}`);

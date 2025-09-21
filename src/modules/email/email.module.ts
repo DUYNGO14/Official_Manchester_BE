@@ -8,7 +8,7 @@ import { EmailService } from '@/modules/email/email.service';
 import { BullModule } from '@nestjs/bullmq';
 import { EmailProcessor } from '@/modules/email/email.processor';
 import { UsersModule } from '@/modules/users/users.module';
-import { BullBoardService } from '@/bull-board/bull-board.service';
+import { BullBoardService } from '@/modules/bull-board/bull-board.service';
 
 @Module({
   imports: [

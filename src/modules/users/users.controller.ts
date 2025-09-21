@@ -11,6 +11,8 @@ import {
   UseInterceptors,
   ParseFilePipe,
   UseGuards,
+  Request,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,6 +20,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationQueryDto } from '@/common/dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImageValidationPipe } from '@/common/pipes/image-validation.pipe';
+import { JwtAuthGuard } from '@/modules/auth/passport/jwt.guard';
 
 @Controller('users')
 export class UsersController {
@@ -67,4 +70,5 @@ export class UsersController {
   async remove(@Param('id') id: string) {
     return await this.usersService.remove(id);
   }
+
 }

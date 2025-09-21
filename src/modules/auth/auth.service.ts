@@ -32,11 +32,15 @@ export class AuthService {
       secret: this.configService.get<string>('JWT_SECRET_REFRESH_TOKEN'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRED'),
     });
-    const ttl = this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRED');
-    const expired_refresh_token = new Date(Date.now() + ms(ttl));
+    const exp_access = this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRED');
+    const expired_access_token = new Date(Date.now() + ms(exp_access));
+
+    const exp_ref = this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRED');
+    const expired_refresh_token = new Date(Date.now() + ms(exp_ref));
 
     return {
       accessToken,
+      expired_access_token,
       refreshToken,
       expired_refresh_token,
     };
@@ -67,7 +71,7 @@ export class AuthService {
         username: user.username,
         device: deviceString,
       };
-      const { accessToken, refreshToken, expired_refresh_token } =
+      const { accessToken,expired_access_token, refreshToken, expired_refresh_token } =
         await this.getTokens(payload);
 
       const sessionId = await this.sessionService.create(
@@ -76,17 +80,11 @@ export class AuthService {
         deviceString,
         expired_refresh_token,
       );
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        path: '/',
-        maxAge: ms(this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRED')),
-      });
       return ApiResponseSuccess(
         'Login successfully',
         {
           accessToken,
+          refreshToken,
           user: { _id: user._id, email: user.email, username: user.username, role: user.role },
         },
         200,
@@ -113,7 +111,7 @@ export class AuthService {
 
   async logout(user: any) : Promise<BaseResponse<any>> {
     try {
-      await this.sessionService.revoke(user.sub, user.device);
+      await this.sessionService.revoke(user.userId, user.device);
       return ApiResponseSuccess('Logout successfully', null, 200);
     } catch (error) {
       throw error;
@@ -121,12 +119,11 @@ export class AuthService {
   }
 
   async refreshToken(
-    user: any,
     refreshTokenOld: string,
-    res
   ) {
     try {
       if(!refreshTokenOld) throw new  UnauthorizedException('Refresh token not found');
+      const user = await this.jwtService.verifyAsync(refreshTokenOld, { secret: this.configService.get<string>('JWT_SECRET_REFRESH_TOKEN') });
       const isValidToken = await this.sessionService.validate(user.sub, refreshTokenOld, user.device);
       if(!isValidToken) throw new UnauthorizedException('Invalid refresh token');
 
@@ -138,7 +135,7 @@ export class AuthService {
         device: user.device,
       }
       const { accessToken, refreshToken, expired_refresh_token } =
-          await this.getTokens(payload);
+        await this.getTokens(payload);
 
       const sessionId = await this.sessionService.update(
         user.sub,
@@ -146,22 +143,24 @@ export class AuthService {
         expired_refresh_token,
         user.device,
       )
-
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        path: '/',
-        maxAge: ms(this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRED')),
-      });
       return ApiResponseSuccess(
         'Refresh token successfully',
         {
           accessToken,
+          refreshToken,
           user: { _id: user.sub, email: user.email, username: user.username, role: user.role },
         },
         200,
       );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getProfile(id: string) {
+    try {
+      const result = await this.usersService.findOne(id);
+      return result;
     } catch (error) {
       throw error;
     }

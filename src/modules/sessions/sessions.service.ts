@@ -85,7 +85,7 @@ export class SessionsService {
   ) {
     const tokenHash = await bcrypt.hash(refreshToken, 10);
     await this.sessionModel.updateOne(
-      { user: userId, device, revoked: false },
+      { user: userId, device, revoked: false },     
       { refreshToken: tokenHash, expiresAt },
     );
   }
