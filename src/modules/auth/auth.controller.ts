@@ -15,6 +15,7 @@ import type { Response } from 'express';
 import { Public } from '@/common/decorator/public.decorator';
 import { JwtRefreshGuard } from '@/modules/auth/passport/jwt-refresh.guard';
 import { JwtAuthGuard } from '@/modules/auth/passport/jwt.guard';
+import { ApiResponseSuccess } from '@/common/helper/base_response';
 
 @Controller('auth')
 export class AuthController {
@@ -29,13 +30,14 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
   ) {
     const result = await this.authService.login(req.user, response, userAgent);
-    return result;
+    return ApiResponseSuccess('Login successfully', result, 200);
   }
 
   @Public()
   @Post('/register')
   async register(@Body() registerDto: RegisterUserDto) {
-    return await this.authService.register(registerDto);
+    const result = await this.authService.register(registerDto);
+    return ApiResponseSuccess('Register successfully', result, 200);
   }
 
   @Public()
@@ -49,7 +51,7 @@ export class AuthController {
   @Post('logout')
   async logout(@Request() req, @Res({ passthrough: true }) response: Response) {
     const result = await this.authService.logout(req.user);
-    return result;
+    return ApiResponseSuccess('Logout successfully', result, 200);
   }
   
   @Public()
@@ -58,7 +60,8 @@ export class AuthController {
     @Request() req,
   ) {
     const refreshTokenOld = req.cookies['refresh_cookei'] || '';
-    return await this.authService.refreshToken(refreshTokenOld);
+    const result = await this.authService.refreshToken(refreshTokenOld);
+    return ApiResponseSuccess('Refresh token successfully', result, 200);
   }
 
   @Get('profile')

@@ -13,7 +13,6 @@ import {
   PaginatedData,
 } from '@/common/helper/base_response';
 import { UploadService } from '@/modules/upload/upload.service';
-import { BaseOptions } from 'vm';
 
 @Injectable()
 export class PlayerService {
@@ -51,11 +50,10 @@ export class PlayerService {
   }
 
   async findAll(
-    page: number = 1,
-    limit: number = 10,
+    player_type: string = 'MAN',
     position?: string,
     nationality?: string,
-  ): Promise<BaseResponse<PaginatedData<Player>>> {
+  ): Promise<BaseResponse<Omit<Player, 'createdAt' | 'updatedAt'>[]>> {
     const query: any = {};
 
     if (position) {
@@ -66,24 +64,14 @@ export class PlayerService {
       query.nationality = new RegExp(nationality, 'i');
     }
 
-    const skip = (page - 1) * limit;
+    if (player_type) {
+      query.player_type = player_type;
+    }
     const players = await this.playerModel
-      .find(query)
-      .skip(skip)
-      .limit(limit)
-      .sort({ fullName: 1 })
+      .find(query, { createdAt: 0, updatedAt: 0, __v: 0 })
+      .sort({ position: 1 })
       .exec();
-
-    const total = await this.playerModel.countDocuments(query).exec();
-    const pages = Math.ceil(total / limit);
-
-    return ApiResponsePaginateResponse(
-      'Users fetched successfully',
-      players,
-      page,
-      limit,
-      total,
-    );
+    return ApiResponseSuccess('Players found successfully', players);
   }
 
   async findOne(id: string): Promise<BaseResponse<Player>> {

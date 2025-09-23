@@ -1,5 +1,5 @@
 import { User, UserDocument } from '@/modules/users/schemas/user.schema';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, GoneException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -264,7 +264,7 @@ export class UsersService {
 
   async registerUser(
     registerDto: RegisterUserDto,
-  ): Promise<BaseResponse<Omit<User, 'password'>>> {
+  ): Promise<Omit<User, 'password'>> {
     try {
       registerDto.password = await hashPassword(registerDto.password);
       const code = await generateCode(6);
@@ -280,9 +280,9 @@ export class UsersService {
         otp: code,
       });
       if (!emailQueue) {
-        return ApiResponseError('Failed to send OTP email', 400);
+        throw new BadRequestException('Failed to send OTP email');
       }
-      return ApiResponseSuccess('User created successfully', user, 201);
+      return  user;
     } catch (error) {
       throw error;
     }
@@ -291,16 +291,16 @@ export class UsersService {
   async verifyAccount(
   email: string,
   code: string,
-): Promise<BaseResponse<Omit<User, 'password'>>> {
+): Promise<Omit<User, 'password'>> {
   try {
     const user = await this.userModel.findOne({ email });
     console.log(user?.code);
     if (!user) {
-      return ApiResponseError('User not found', 404);
+     throw new NotFoundException('User not found');
     } else if (user.code !== code) {
-      return ApiResponseError('Invalid code or email', 400);
+      throw new UnauthorizedException('Invalid code');
     } else if (dayjs(user.expired_code).isBefore(dayjs())) {
-      return ApiResponseError('Code expired or invalid', 400);
+      throw new GoneException('Code expired please try again');
     } else {
       // Sử dụng updateOne với $unset
       await this.userModel.updateOne(
@@ -311,7 +311,7 @@ export class UsersService {
         }
       );
       
-      return ApiResponseSuccess('User verified successfully', user, 200);
+      return user;
     }
   } catch (error) {
     throw error;

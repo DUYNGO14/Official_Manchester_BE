@@ -32,7 +32,9 @@ export class AuthService {
       secret: this.configService.get<string>('JWT_SECRET_REFRESH_TOKEN'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRED'),
     });
-    const exp_access = this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRED');
+    const exp_access = this.configService.get<string>(
+      'JWT_ACCESS_TOKEN_EXPIRED',
+    );
     const expired_access_token = new Date(Date.now() + ms(exp_access));
 
     const exp_ref = this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRED');
@@ -56,11 +58,7 @@ export class AuthService {
     return null;
   }
 
-  async login(
-    user: any,
-    res: any,
-    userAgent: string,
-  ): Promise<BaseResponse<any>> {
+  async login(user: any, res: any, userAgent: string): Promise<any> {
     try {
       const deviceInfo = getDeviceInfo(userAgent);
       const deviceString = stringifyDevice(deviceInfo);
@@ -71,7 +69,7 @@ export class AuthService {
         username: user.username,
         device: deviceString,
       };
-      const { accessToken,expired_access_token, refreshToken, expired_refresh_token } =
+      const { accessToken, refreshToken, expired_refresh_token } =
         await this.getTokens(payload);
 
       const sessionId = await this.sessionService.create(
@@ -80,23 +78,22 @@ export class AuthService {
         deviceString,
         expired_refresh_token,
       );
-      return ApiResponseSuccess(
-        'Login successfully',
-        {
-          accessToken,
-          refreshToken,
-          user: { _id: user._id, email: user.email, username: user.username, role: user.role },
+      return {
+        accessToken,
+        refreshToken,
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
         },
-        200,
-      );
+      };
     } catch (error) {
       throw error;
     }
   }
 
-  async register(
-    register: RegisterUserDto,
-  ): Promise<BaseResponse<Omit<User, 'password'>>> {
+  async register(register: RegisterUserDto): Promise<Omit<User, 'password'>> {
     const result = await this.usersService.registerUser(register);
     return result;
   }
@@ -104,28 +101,34 @@ export class AuthService {
   async verifyAccount(
     email: string,
     code: string,
-  ): Promise<BaseResponse<Omit<User, 'password'>>> {
+  ): Promise<Omit<User, 'password'>> {
     const result = await this.usersService.verifyAccount(email, code);
     return result;
   }
 
-  async logout(user: any) : Promise<BaseResponse<any>> {
+  async logout(user: any): Promise<any> {
     try {
       await this.sessionService.revoke(user.userId, user.device);
-      return ApiResponseSuccess('Logout successfully', null, 200);
+      return null;
     } catch (error) {
       throw error;
     }
   }
 
-  async refreshToken(
-    refreshTokenOld: string,
-  ) {
+  async refreshToken(refreshTokenOld: string): Promise<any> {
     try {
-      if(!refreshTokenOld) throw new  UnauthorizedException('Refresh token not found');
-      const user = await this.jwtService.verifyAsync(refreshTokenOld, { secret: this.configService.get<string>('JWT_SECRET_REFRESH_TOKEN') });
-      const isValidToken = await this.sessionService.validate(user.sub, refreshTokenOld, user.device);
-      if(!isValidToken) throw new UnauthorizedException('Invalid refresh token');
+      if (!refreshTokenOld)
+        throw new UnauthorizedException('Refresh token not found');
+      const user = await this.jwtService.verifyAsync(refreshTokenOld, {
+        secret: this.configService.get<string>('JWT_SECRET_REFRESH_TOKEN'),
+      });
+      const isValidToken = await this.sessionService.validate(
+        user.sub,
+        refreshTokenOld,
+        user.device,
+      );
+      if (!isValidToken)
+        throw new UnauthorizedException('Invalid refresh token');
 
       const payload = {
         sub: user.sub,
@@ -133,7 +136,7 @@ export class AuthService {
         username: user.username,
         role: user.role,
         device: user.device,
-      }
+      };
       const { accessToken, refreshToken, expired_refresh_token } =
         await this.getTokens(payload);
 
@@ -142,16 +145,17 @@ export class AuthService {
         refreshToken,
         expired_refresh_token,
         user.device,
-      )
-      return ApiResponseSuccess(
-        'Refresh token successfully',
-        {
-          accessToken,
-          refreshToken,
-          user: { _id: user.sub, email: user.email, username: user.username, role: user.role },
-        },
-        200,
       );
+      return {
+        accessToken,
+        refreshToken,
+        user: {
+          _id: user.sub,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        },
+      };
     } catch (error) {
       throw error;
     }

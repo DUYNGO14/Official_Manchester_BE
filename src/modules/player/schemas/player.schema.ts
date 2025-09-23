@@ -26,6 +26,9 @@ export class Player {
   jerseyNumber: number;
 
   @Prop()
+  player_type: string;
+
+  @Prop()
   dateOfBirth: Date;
 
   @Prop()

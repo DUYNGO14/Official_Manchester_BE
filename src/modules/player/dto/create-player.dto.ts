@@ -1,5 +1,5 @@
 // dto/create-player.dto.ts
-import { Position } from '@/common/constants/player.enum';
+import { PlayerType, Position } from '@/common/constants/player.enum';
 import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
@@ -33,6 +33,10 @@ export class CreatePlayerDto {
   @IsNotEmpty()
   @IsString()
   position: Position;
+
+  @IsNotEmpty()
+  @IsString()
+  player_type : PlayerType;
 
   @IsOptional()
   @IsNumber()

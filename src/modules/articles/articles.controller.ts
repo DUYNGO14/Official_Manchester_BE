@@ -12,6 +12,7 @@ import {
   ParseFilePipe,
   Get,
   Query,
+  Param,
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { CreateArticleDto } from './dto/create-article.dto';
@@ -27,6 +28,7 @@ import { PaginationQueryDto } from '@/common/dto';
 import { ArticleResponseDto } from '@/modules/articles/dto/ArticleResponse.dto';
 import { Roles } from '@/common/decorator/roles.decorator';
 import { UserRole } from '@/common/constants/user.enum';
+import { count } from 'console';
 
 @Controller('articles')
 export class ArticlesController {
@@ -73,6 +75,18 @@ export class ArticlesController {
       query.sort,
       query.order,
     );
+    return ApiResponseSuccess('Articles fetched successfully', result,200);
+  }
+
+  @Get(':slug')
+  async findOne(@Param('slug') slug: string): Promise<BaseResponse<Article>> {
+    const result = await this.articlesService.findOneBySlug(slug);
+    return ApiResponseSuccess('Article fetched successfully', result,200);
+  }
+
+  @Get('latest/preview')
+  async findLatest(): Promise<BaseResponse<Article[]>> {
+    const result = await this.articlesService.getFiveLatestArticles(5);
     return ApiResponseSuccess('Articles fetched successfully', result,200);
   }
 }

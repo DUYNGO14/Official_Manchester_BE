@@ -1,3 +1,4 @@
+import { Player } from './../../modules/player/schemas/player.schema';
 // enums/Position.ts
 export enum Position {
   GK = "GK",   // Goalkeeper
@@ -18,6 +19,13 @@ export enum Position {
   CF = "CF",   // Centre Forward
   ST = "ST",   // Striker
   SS = "SS"    // Second Striker / Support Striker
+}
+
+export enum PlayerType {
+  MAN = "MAN",
+  WOMEN = "WOMEN",
+  ACADEMY = "ACADEMY",
+  LEGENDS = "LEGENDS"
 }
 
 // Hiển thị tên đầy đủ cho UI
@@ -41,6 +49,9 @@ export const PositionLabel: Record<Position, string> = {
   [Position.ST]: "Striker",
   [Position.SS]: "Second Striker"
 };
+
+
+
 
 // Helper: lấy label từ enum value
 export function getPositionLabel(pos: Position | string): string {

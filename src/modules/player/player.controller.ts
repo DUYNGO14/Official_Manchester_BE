@@ -39,12 +39,11 @@ export class PlayerController {
 
   @Get()
   async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query('player_type') player_type: string,
     @Query('position') position?: string,
     @Query('nationality') nationality?: string,
   ){
-    return await this.playerService.findAll(page, limit, position, nationality);
+    return await this.playerService.findAll(player_type, position, nationality);
   }
 
   @Get('search')

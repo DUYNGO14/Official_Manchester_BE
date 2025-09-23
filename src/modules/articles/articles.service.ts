@@ -69,7 +69,9 @@ export class ArticlesService {
     }
 
     // Kiểm tra author tồn tại
-    const author = await this.usersService.findOne(createArticleDto.authorId.toString());
+    const author = await this.usersService.findOne(
+      createArticleDto.authorId.toString(),
+    );
     if (!author) {
       throw new NotFoundException('Author not found');
     }
@@ -135,6 +137,21 @@ export class ArticlesService {
     }
   }
 
+  async getFiveLatestArticles(count = 5): Promise<Article[]> {
+    try {
+      const articles = await this.articleModel
+        .find()
+        .sort({ createdAt: -1 })
+        .limit(count)
+        .populate('authorId', 'username avatar')
+        .populate('categoryId', 'name slug')
+        .exec();
+      return articles;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAll(
     page = 1,
     limit = 10,
@@ -157,7 +174,7 @@ export class ArticlesService {
       // Sort
       const sortOption: Record<string, 1 | -1> = {
         [order]: sort === 'asc' ? 1 : -1,
-      };    
+      };
 
       // Lấy dữ liệu & tổng số song song
       const [articles, total] = await Promise.all([
@@ -179,8 +196,40 @@ export class ArticlesService {
         page,
         limit,
         total,
-        totalPage
+        totalPage,
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Lấy bài viết theo slug
+  async findOneBySlug(slug: string): Promise<Article> {
+    try {
+      const article = await this.articleModel
+        .findOne({ slug })
+        .populate('authorId', 'username avatar')
+        .populate('categoryId', 'name slug')
+        .exec();
+      if (!article) {
+        throw new NotFoundException(`Article with slug ${slug} not found`);
+      }
+      return article;
+    } catch (error) {
+      throw error;
+    }
+  }
+  // lấy bài vieeys theo id
+  async findOneById(id: string): Promise<Article> {
+    try {
+      const article = await this.articleModel.findById(id)
+      .populate('authorId', 'username avatar')
+      .populate('categoryId', 'name slug')
+      .exec();
+      if (!article) {
+        throw new NotFoundException(`Article with id ${id} not found`);
+      }
+      return article;
     } catch (error) {
       throw error;
     }
@@ -194,16 +243,20 @@ export class ArticlesService {
       summary: article.summary,
       content: article.content,
       thumbnail: article.thumbnail,
-      author: article.authorId ? {
-        _id: article.authorId._id.toString(),
-        fullName: article.authorId.username,
-        avatarUrl: article.authorId.avatarUrl,
-      } : null,
-      category: article.categoryId ? {
-        _id: article.categoryId._id.toString(),
-        name: article.categoryId.name,
-        slug: article.categoryId.slug,
-      } : null,
+      author: article.authorId
+        ? {
+            _id: article.authorId._id.toString(),
+            fullName: article.authorId.username,
+            avatarUrl: article.authorId.avatarUrl,
+          }
+        : null,
+      category: article.categoryId
+        ? {
+            _id: article.categoryId._id.toString(),
+            name: article.categoryId.name,
+            slug: article.categoryId.slug,
+          }
+        : null,
       publishedAt: article.publishedAt,
       views: article.views,
     };
